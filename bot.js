@@ -68,6 +68,7 @@ let sessionId = cfg('CLAUDE_SESSION_ID') || null
 const CLAUDE_BIN = cfg('CLAUDE_BIN') || 'claude'
 const CLAUDE_CWD = cfg('CLAUDE_CWD') || process.cwd()
 const CLAUDE_FLAGS = (cfg('CLAUDE_FLAGS') || '').split(/\s+/).filter(Boolean)
+const CLAUDE_TIMEOUT = Number(cfg('CLAUDE_TIMEOUT') || 0) * 1000   // segundos → ms; 0 = SIN límite (que demore lo que tenga que demorar)
 const TUNNEL_SERVER = cfg('TUNNEL_SERVER') || undefined   // undefined → default de la lib
 let busy = false
 const queue = []
@@ -159,22 +160,23 @@ async function runClaude (text, chatId, who) {
 async function claudeRun (text, useSession) {
   const args = ['-p', text, '--output-format', 'json', ...CLAUDE_FLAGS]
   if (useSession) args.push('--resume', useSession)
-  const out = await runCmd(CLAUDE_BIN, args, CLAUDE_CWD, 300000)
+  const out = await runCmd(CLAUDE_BIN, args, CLAUDE_CWD, CLAUDE_TIMEOUT)
   let result = out, sid = useSession
   try { const j = JSON.parse(out); result = (j.result ?? out); sid = j.session_id || sid } catch {}
   return { result, sid }
 }
 
-function runCmd (cmd, args, cwd, timeoutMs = 300000) {
+function runCmd (cmd, args, cwd, timeoutMs = 0) {
   return new Promise((resolve, reject) => {
     // stdin cerrado para que claude -p no espere por stdin.
     const p = spawn(cmd, args, { cwd, stdio: ['ignore', 'pipe', 'pipe'], env: { ...process.env, PATH: `${process.env.PATH || ''}:${EXTRA_PATH}` } })
     let out = '', err = ''
-    const to = setTimeout(() => { try { p.kill('SIGKILL') } catch {}; reject(new Error('timeout')) }, timeoutMs)
+    // timeoutMs > 0 → corta; 0 = sin límite (deja correr lo que haga falta).
+    const to = timeoutMs > 0 ? setTimeout(() => { try { p.kill('SIGKILL') } catch {}; reject(new Error('timeout')) }, timeoutMs) : null
     p.stdout.on('data', (d) => { out += d })
     p.stderr.on('data', (d) => { err += d })
-    p.on('error', (e) => { clearTimeout(to); reject(e) })
-    p.on('close', (code) => { clearTimeout(to); code === 0 ? resolve(out) : reject(new Error((err.slice(-400) || 'exit ' + code))) })
+    p.on('error', (e) => { if (to) clearTimeout(to); reject(e) })
+    p.on('close', (code) => { if (to) clearTimeout(to); code === 0 ? resolve(out) : reject(new Error((err.slice(-400) || 'exit ' + code))) })
   })
 }
 
