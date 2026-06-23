@@ -96,11 +96,15 @@ async function handleUpdate (update) {
     return
   }
 
+  // Sin usuario autorizado definido → SIEMPRE eco del id + cómo autorizarse (no captura).
   if (!ALLOWED) {
-    ALLOWED = String(from.id)
-    setEnv('ALLOWED_USER_ID', ALLOWED)
-    console.log(`\n✅ USUARIO AUTORIZADO CAPTURADO: id=${ALLOWED}  ${who}  ${JSON.stringify(from)}\n`)
-    await reply(chatId, `✅ Quedaste registrado como el usuario autorizado (id ${ALLOWED}).\nDesde ahora hablas directo con Claude (con memoria). Escríbeme lo que quieras.`)
+    console.log(`ℹ️ sin ALLOWED_USER_ID — eco a ${who} (id ${from.id})`)
+    await reply(chatId,
+      '🔓 Este bot todavía no tiene un usuario autorizado.\n\n' +
+      `Tu id de Telegram es: ${from.id}\n\n` +
+      'Para autorizarte (y que solo tú puedas usarlo), pon esto en el .env del bot:\n' +
+      `    ALLOWED_USER_ID=${from.id}\n` +
+      'y reinícialo. Después podrás chatear con Claude por aquí.')
     return
   }
   if (String(from.id) !== ALLOWED) {

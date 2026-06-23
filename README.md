@@ -24,8 +24,11 @@ TELEGRAM_BOT_TOKEN=123:ABC  npx dotrino-telegram-claude-bot   # sin archivo, tod
 ```
 
 Imprime tu **URL pública** y registra el webhook solo. Con un `.env` por bot levantás
-**varios** (cada uno su token, su túnel y su carpeta) apuntando a archivos distintos. Mandale `/id` al bot para ver tu
-id; el **primer** usuario que escriba queda como autorizado (o fijalo con `ALLOWED_USER_ID`).
+**varios** (cada uno su token, su túnel y su carpeta) apuntando a archivos distintos.
+
+Si `ALLOWED_USER_ID` está vacío, el bot **no atiende a nadie**: a cada mensaje responde
+con el id de quien escribe y cómo autorizarlo. Poné `ALLOWED_USER_ID=<tu id>` en el `.env`
+y reiniciá (no captura a nadie automáticamente, así nadie se autoriza por escribir primero).
 
 ## Configuración
 
@@ -37,7 +40,7 @@ Por **variables de entorno** o por un archivo **`.env`** (en el cwd, o el que in
 | `TELEGRAM_BOT_TOKEN` | — (**req**) | token de @BotFather |
 | `CLAUDE_CWD` | el cwd actual | carpeta donde corre Claude (con memoria) |
 | `CLAUDE_FLAGS` | *(vacío)* | flags extra para `claude -p` (ver abajo) |
-| `ALLOWED_USER_ID` | captura al 1ro | id de Telegram autorizado |
+| `ALLOWED_USER_ID` | *(vacío → no atiende)* | id de Telegram autorizado (vacío = solo responde id + cómo autorizar) |
 | `CLAUDE_BIN` | `claude` | binario de claude |
 | `TUNNEL_SERVER` | `https://r.dotrino.com` | relay del túnel |
 | `TUNNEL_KEY` / `TG_WEBHOOK_SECRET` / `CLAUDE_SESSION_ID` | autogenerados | URL estable / validación / memoria |
