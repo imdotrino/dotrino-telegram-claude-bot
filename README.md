@@ -15,13 +15,15 @@ encadenada (memoria). Útil como asistente personal de Claude desde el teléfono
 ```sh
 # 1) crea un bot con @BotFather y copia el token
 # 2) prepará un .env (ver .env.example) y apuntá el bot a ese archivo:
-npx dotrino-telegram-claude-bot ./mi-bot.env
+npx dotrino-telegram-claude-bot@latest ./mi-bot.env
 
 # alternativas equivalentes:
-npx dotrino-telegram-claude-bot --env /ruta/mi-bot.env
-BOT_ENV=/ruta/mi-bot.env  npx dotrino-telegram-claude-bot
-TELEGRAM_BOT_TOKEN=123:ABC  npx dotrino-telegram-claude-bot   # sin archivo, todo por env
+npx dotrino-telegram-claude-bot@latest --env /ruta/mi-bot.env
+BOT_ENV=/ruta/mi-bot.env  npx dotrino-telegram-claude-bot@latest
+TELEGRAM_BOT_TOKEN=123:ABC  npx dotrino-telegram-claude-bot@latest   # sin archivo, todo por env
 ```
+
+> Usá **`@latest`**: `npx` cachea, y sin eso podrías quedarte con una versión vieja.
 
 Imprime tu **URL pública** y registra el webhook solo. Con un `.env` por bot levantás
 **varios** (cada uno su token, su túnel y su carpeta) apuntando a archivos distintos.
