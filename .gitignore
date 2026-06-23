@@ -1,0 +1,6 @@
+node_modules/
+.env
+*.env
+*.log
+ecosystem.config.cjs
+package-lock.json

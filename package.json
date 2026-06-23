@@ -1,0 +1,19 @@
+{
+  "name": "dotrino-telegram-claude-bot",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Bot de Telegram que conversa con Claude (con memoria), expuesto sin abrir puertos con @dotrino/tunnel. Solo para el usuario autorizado.",
+  "keywords": ["telegram", "bot", "claude", "claude-code", "tunnel", "webhook", "dotrino"],
+  "license": "MIT",
+  "author": "Dotrino",
+  "homepage": "https://github.com/imdotrino/dotrino-telegram-claude-bot",
+  "repository": { "type": "git", "url": "https://github.com/imdotrino/dotrino-telegram-claude-bot" },
+  "type": "module",
+  "bin": { "dotrino-telegram-claude-bot": "bot.js" },
+  "files": ["bot.js", ".env.example", "README.md"],
+  "engines": { "node": ">=20" },
+  "scripts": { "start": "node bot.js" },
+  "dependencies": {
+    "@dotrino/tunnel": "^0.1.3"
+  }
+}
