@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Dotrino Telegram Claude Bot">
+  <rect width="512" height="512" rx="112" fill="#229ED9"/>
+  <!-- avión de papel (Telegram) -->
+  <path d="M384 150 L146 258 l72 26 l20 74 l34 -44 l70 52 z" fill="#ffffff"/>
+  <path d="M290 336 l-34 44 l-4 -70 l134 -110 z" fill="#c8e8f7"/>
+  <!-- chispa IA (Claude) -->
+  <path d="M150 150 l10 26 l26 10 l-26 10 l-10 26 l-10 -26 l-26 -10 l26 -10 z" fill="#ffffff"/>
+</svg>

@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#229ED9">
+<link rel="icon" type="image/svg+xml" href="icon.svg">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>Telegram Bot — asistente de IA (Claude/DeepSeek) en tu máquina | Dotrino</title>
+<meta name="description" content="Chatea con un asistente de IA desde Telegram, corriendo en tu propia máquina y con memoria. Se expone sin abrir puertos con @dotrino/tunnel y solo te responde a ti. Instálalo con npx." />
+<link rel="canonical" href="https://telegram-bot.dotrino.com/" />
+<meta property="og:type" content="website" />
+<meta property="og:locale" content="es_ES" />
+<meta property="og:locale:alternate" content="en_US" />
+<meta property="og:site_name" content="Dotrino" />
+<meta property="og:title" content="Telegram Bot — asistente de IA en tu máquina" />
+<meta property="og:description" content="Un bot de Telegram que conversa con un asistente de IA (Claude, DeepSeek u otro) en tu propia máquina, con memoria. Sin abrir puertos. Solo te responde a ti." />
+<meta property="og:url" content="https://telegram-bot.dotrino.com/" />
+<meta property="og:image" content="https://telegram-bot.dotrino.com/og.jpg" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="Telegram Bot — asistente de IA en tu máquina" />
+<meta name="twitter:description" content="Un bot de Telegram que conversa con un asistente de IA en tu propia máquina, con memoria. Sin abrir puertos. Solo te responde a ti." />
+<meta name="twitter:image" content="https://telegram-bot.dotrino.com/og.jpg" />
+<!-- Analítica cookieless autohosteada (GoatCounter); no cuenta en localhost/LAN. -->
+<script>window.goatcounter={path:function(p){return location.hostname+p}}</script>
+<script data-goatcounter="https://goat.dotrino.com/count" async src="https://goat.dotrino.com/count.js"></script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  "name": "Dotrino Telegram Bot",
+  "url": "https://telegram-bot.dotrino.com/",
+  "description": "Bot de Telegram que conversa con un asistente de IA (Claude, DeepSeek u otro) en tu propia máquina, con memoria, expuesto sin abrir puertos con @dotrino/tunnel.",
+  "applicationCategory": "DeveloperApplication",
+  "operatingSystem": "Web, Linux, macOS, Windows",
+  "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+  "publisher": { "@type": "Organization", "name": "Dotrino", "url": "https://dotrino.com/" }
+}
+</script>
+<style>
+  :root {
+    --tg: #229ED9;
+    --bg: #0e0b1a;
+    --panel: #171331;
+    --ink: #eee9ff;
+    --muted: #a79fce;
+    --line: #2b2450;
+    --code-bg: #0b0820;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--bg); color: var(--ink);
+    font: 16px/1.6 system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+    -webkit-text-size-adjust: 100%;
+  }
+  a { color: var(--tg); }
+  .wrap { max-width: 820px; margin: 0 auto; padding: 24px 20px 96px; }
+  header { text-align: center; padding: 32px 0 8px; }
+  .logo { width: 88px; height: 88px; border-radius: 22px; }
+  h1 { font-size: clamp(28px, 6vw, 40px); margin: 16px 0 6px; }
+  .tagline { color: var(--muted); font-size: 18px; margin: 0 auto; max-width: 42ch; }
+  .langbar { text-align: right; margin-bottom: 8px; }
+  .langbar button {
+    background: none; border: 1px solid var(--line); color: var(--muted);
+    border-radius: 8px; padding: 4px 10px; cursor: pointer; font: inherit; font-size: 14px;
+  }
+  .langbar button.on { color: var(--ink); border-color: var(--tg); }
+  h2 { font-size: 22px; margin: 40px 0 12px; }
+  p { margin: 12px 0; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 18px 20px; margin: 14px 0; }
+  ol, ul { margin: 12px 0; padding-left: 22px; }
+  li { margin: 6px 0; }
+  code { background: var(--code-bg); padding: 2px 6px; border-radius: 6px; font-size: 0.92em; }
+  pre {
+    background: var(--code-bg); border: 1px solid var(--line); border-radius: 12px;
+    padding: 14px 16px; overflow-x: auto; font-size: 14px;
+  }
+  pre code { background: none; padding: 0; }
+  table { width: 100%; border-collapse: collapse; margin: 12px 0; display: block; overflow-x: auto; }
+  th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { color: var(--muted); font-weight: 600; }
+  .warn { border-color: #b45309; background: #241a0a; }
+  .warn strong { color: #fbbf24; }
+  .cta { display: inline-block; margin: 6px 8px 6px 0; padding: 10px 18px; border-radius: 10px; background: var(--tg); color: #fff; text-decoration: none; font-weight: 600; }
+  .cta.ghost { background: none; border: 1px solid var(--line); color: var(--ink); }
+  footer { text-align: center; color: var(--muted); font-size: 14px; margin-top: 48px; }
+  [data-lang="en"] { display: none; }
+  html[lang="en"] [data-lang="es"] { display: none; }
+  html[lang="en"] [data-lang="en"] { display: revert; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="langbar">
+    <button id="lang-es" class="on" onclick="setLang('es')">ES</button>
+    <button id="lang-en" onclick="setLang('en')">EN</button>
+  </div>
+
+  <header>
+    <img class="logo" src="icon.svg" alt="Dotrino Telegram Bot" onerror="this.style.display='none'">
+    <h1>Telegram Bot</h1>
+    <p class="tagline" data-lang="es">Chatea con un asistente de IA desde Telegram, corriendo en <b>tu</b> máquina, con memoria. Solo te responde a ti.</p>
+    <p class="tagline" data-lang="en">Chat with an AI assistant from Telegram, running on <b>your</b> machine, with memory. It only answers you.</p>
+  </header>
+
+  <!-- Qué es -->
+  <section>
+    <div data-lang="es">
+      <div class="card">
+        <p>Un bot de <b>Telegram</b> que conversa con un asistente de IA —hoy <b>Claude</b>, mañana <b>DeepSeek</b> u otro— corriendo en <b>tu propia máquina</b> y recordando la conversación. Se expone al mundo con <a href="https://telegram-bot.dotrino.com/"><code>@dotrino/tunnel</code></a>: <b>sin abrir puertos ni configurar el router</b>. Solo responde al usuario que tú autorices.</p>
+      </div>
+    </div>
+    <div data-lang="en">
+      <div class="card">
+        <p>A <b>Telegram</b> bot that talks to an AI assistant —<b>Claude</b> today, <b>DeepSeek</b> or another tomorrow— running on <b>your own machine</b> and remembering the conversation. Exposed to the world with <a href="https://telegram-bot.dotrino.com/"><code>@dotrino/tunnel</code></a>: <b>no open ports, no router setup</b>. It only answers the user you authorize.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Uso rápido -->
+  <section>
+    <h2 data-lang="es">Uso rápido (npx)</h2>
+    <h2 data-lang="en">Quick start (npx)</h2>
+    <ol data-lang="es">
+      <li>Crea un bot con <a href="https://t.me/BotFather">@BotFather</a> y copia el token.</li>
+      <li>Arma un archivo <code>.env</code> (ver ejemplo abajo) y apunta el bot a él:</li>
+    </ol>
+    <ol data-lang="en">
+      <li>Create a bot with <a href="https://t.me/BotFather">@BotFather</a> and copy the token.</li>
+      <li>Prepare an <code>.env</code> file (see the example below) and point the bot to it:</li>
+    </ol>
+    <pre><code>npx dotrino-telegram-claude-bot@latest ./mi-bot.env</code></pre>
+    <p data-lang="es">Formas equivalentes:</p>
+    <p data-lang="en">Equivalent forms:</p>
+    <pre><code>npx dotrino-telegram-claude-bot@latest --env /ruta/mi-bot.env
+BOT_ENV=/ruta/mi-bot.env  npx dotrino-telegram-claude-bot@latest
+TELEGRAM_BOT_TOKEN=123:ABC  npx dotrino-telegram-claude-bot@latest   # todo por env</code></pre>
+    <div class="card" data-lang="es"><p>Usa siempre <code>@latest</code>: npx cachea y sin eso podrías quedarte con una versión vieja. Al arrancar imprime tu <b>URL pública</b> y registra el webhook solo.</p></div>
+    <div class="card" data-lang="en"><p>Always use <code>@latest</code>: npx caches, and without it you could stay on an old version. On start it prints your <b>public URL</b> and registers the webhook by itself.</p></div>
+  </section>
+
+  <!-- Configuración -->
+  <section>
+    <h2 data-lang="es">Configuración (<code>.env</code>)</h2>
+    <h2 data-lang="en">Configuration (<code>.env</code>)</h2>
+    <table>
+      <tr><th data-lang="es">Variable</th><th data-lang="en">Variable</th><th data-lang="es">Qué es</th><th data-lang="en">What it is</th></tr>
+      <tr><td><code>TELEGRAM_BOT_TOKEN</code></td><td data-lang="es"><b>(requerido)</b> token de @BotFather</td><td data-lang="en"><b>(required)</b> token from @BotFather</td></tr>
+      <tr><td><code>ALLOWED_USER_ID</code></td><td data-lang="es">tu id de Telegram autorizado. Vacío = no atiende a nadie (solo responde tu id y cómo autorizarte)</td><td data-lang="en">your authorized Telegram id. Empty = it answers nobody (only replies your id and how to authorize)</td></tr>
+      <tr><td><code>CLAUDE_CWD</code></td><td data-lang="es">carpeta donde corre el asistente, con memoria (default: cwd actual)</td><td data-lang="en">folder where the assistant runs, with memory (default: current cwd)</td></tr>
+      <tr><td><code>CLAUDE_FLAGS</code></td><td data-lang="es">flags extra (modelo, permisos). Vacío = seguro (no ejecuta sin permiso)</td><td data-lang="en">extra flags (model, permissions). Empty = safe (won't run without permission)</td></tr>
+      <tr><td><code>CLAUDE_BIN</code></td><td data-lang="es">binario del asistente (default <code>claude</code>)</td><td data-lang="en">assistant binary (default <code>claude</code>)</td></tr>
+    </table>
+    <div class="card warn" data-lang="es"><p><strong>⚠️ Autonomía total:</strong> con <code>CLAUDE_FLAGS=--dangerously-skip-permissions</code> el usuario autorizado puede hacer que el asistente <b>ejecute cualquier cosa</b> en tu máquina. El túnel es público: quien controle tu Telegram controla la máquina. Úsalo solo si entiendes el riesgo.</p></div>
+    <div class="card warn" data-lang="en"><p><strong>⚠️ Full autonomy:</strong> with <code>CLAUDE_FLAGS=--dangerously-skip-permissions</code> the authorized user can make the assistant <b>run anything</b> on your machine. The tunnel is public: whoever controls your Telegram controls the machine. Use it only if you understand the risk.</p></div>
+  </section>
+
+  <!-- Cómo funciona -->
+  <section>
+    <h2 data-lang="es">Cómo funciona</h2>
+    <h2 data-lang="en">How it works</h2>
+    <pre><code>Telegram ──HTTPS──▶ r.dotrino.com/&lt;key&gt;/tg ──▶ [túnel] ──▶ bot ──▶ asistente IA (CLAUDE_CWD)
+                    valida X-Telegram-Bot-Api-Secret-Token        memoria con --resume</code></pre>
+    <ul data-lang="es">
+      <li><b>Seguridad:</b> valida el header <code>X-Telegram-Bot-Api-Secret-Token</code> → solo Telegram puede invocar tu webhook.</li>
+      <li><b>Memoria:</b> guarda el <code>session_id</code> y usa <code>--resume</code> en cada mensaje; sobrevive reinicios.</li>
+      <li><b>Cola:</b> si llega un mensaje mientras procesa otro, lo encola (no lo descarta).</li>
+    </ul>
+    <ul data-lang="en">
+      <li><b>Security:</b> it validates the <code>X-Telegram-Bot-Api-Secret-Token</code> header → only Telegram can invoke your webhook.</li>
+      <li><b>Memory:</b> it stores the <code>session_id</code> and uses <code>--resume</code> on each message; it survives restarts.</li>
+      <li><b>Queue:</b> if a message arrives while it's processing another, it queues it (doesn't drop it).</li>
+    </ul>
+  </section>
+
+  <!-- Correr siempre -->
+  <section>
+    <h2 data-lang="es">Correr siempre (PM2)</h2>
+    <h2 data-lang="en">Keep it running (PM2)</h2>
+    <pre><code>pm2 start "$(npm root -g)/dotrino-telegram-claude-bot/bot.js" --name mi-bot --cwd /mi/proyecto
+pm2 save &amp;&amp; pm2 startup</code></pre>
+    <p data-lang="es">Con un <code>.env</code> por bot levantas <b>varios</b> (cada uno su token, su túnel y su carpeta).</p>
+    <p data-lang="en">With one <code>.env</code> per bot you can run <b>several</b> (each with its own token, tunnel and folder).</p>
+  </section>
+
+  <section style="text-align:center; margin-top:32px">
+    <a class="cta" href="https://www.npmjs.com/package/dotrino-telegram-claude-bot">npm</a>
+    <a class="cta ghost" href="https://github.com/imdotrino/dotrino-telegram-claude-bot">GitHub</a>
+    <a class="cta ghost" href="https://dotrino.com/">Dotrino</a>
+  </section>
+
+  <footer>
+    <p>MIT · <span data-lang="es">parte del ecosistema</span><span data-lang="en">part of the</span> <a href="https://dotrino.com/">Dotrino</a><span data-lang="en"> ecosystem</span>.</p>
+  </footer>
+</div>
+
+<dotrino-support contact></dotrino-support>
+<script type="module" src="https://cdn.jsdelivr.net/npm/@dotrino/support@0.7/src/index.js"></script>
+<script>
+  function setLang(l) {
+    document.documentElement.lang = l;
+    document.getElementById('lang-es').classList.toggle('on', l === 'es');
+    document.getElementById('lang-en').classList.toggle('on', l === 'en');
+    try { localStorage.setItem('lang', l); } catch (e) {}
+  }
+  (function () {
+    var saved;
+    try { saved = localStorage.getItem('lang'); } catch (e) {}
+    var l = saved || (navigator.language || 'es').slice(0, 2);
+    setLang(l === 'en' ? 'en' : 'es');
+  })();
+</script>
+</body>
+</html>
