@@ -18,7 +18,7 @@
  *   TUNNEL_SERVER       relay del túnel                     (def: https://r.dotrino.com)
  *   TUNNEL_KEY / TG_WEBHOOK_SECRET / CLAUDE_SESSION_ID  se autogeneran y persisten.
  */
-import { readFileSync, writeFileSync } from 'node:fs'
+import { readFileSync, writeFileSync, mkdirSync } from 'node:fs'
 import { spawn } from 'node:child_process'
 import { dirname, join } from 'node:path'
 import { randomBytes } from 'node:crypto'
@@ -67,6 +67,7 @@ let ALLOWED = cfg('ALLOWED_USER_ID') || null
 let sessionId = cfg('CLAUDE_SESSION_ID') || null
 const CLAUDE_BIN = cfg('CLAUDE_BIN') || 'claude'
 const CLAUDE_CWD = cfg('CLAUDE_CWD') || process.cwd()
+const UPLOAD_DIR = join(CLAUDE_CWD, '.tg-uploads')   // fotos recibidas → aquí las lee Claude
 const CLAUDE_FLAGS = (cfg('CLAUDE_FLAGS') || '').split(/\s+/).filter(Boolean)
 const CLAUDE_TIMEOUT = Number(cfg('CLAUDE_TIMEOUT') || 0) * 1000   // segundos → ms; 0 = SIN límite (que demore lo que tenga que demorar)
 const TUNNEL_SERVER = cfg('TUNNEL_SERVER') || undefined   // undefined → default de la lib
@@ -81,6 +82,30 @@ const api = (method, body) =>
     method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body),
   }).then((r) => r.json())
 const reply = (chatId, text) => api('sendMessage', { chat_id: chatId, text })
+
+/* --------- Media: descarga de fotos/imágenes de Telegram --------- */
+function pickMedia (msg) {
+  if (Array.isArray(msg.photo) && msg.photo.length) {
+    const big = msg.photo[msg.photo.length - 1]   // la de mayor resolución
+    return { fileId: big.file_id, name: `tg-${Date.now()}.jpg` }
+  }
+  if (msg.document && /^image\//.test(msg.document.mime_type || '')) {
+    const ext = (msg.document.file_name || '').match(/\.[a-z0-9]+$/i)?.[0] || '.img'
+    return { fileId: msg.document.file_id, name: `tg-${Date.now()}${ext}` }
+  }
+  return null
+}
+async function downloadTgFile (fileId, name) {
+  const g = await api('getFile', { file_id: fileId })
+  if (!g.ok || !g.result || !g.result.file_path) throw new Error('getFile falló')
+  const res = await fetch(`https://api.telegram.org/file/bot${TOKEN}/${g.result.file_path}`)
+  if (!res.ok) throw new Error('descarga HTTP ' + res.status)
+  const buf = Buffer.from(await res.arrayBuffer())
+  try { mkdirSync(UPLOAD_DIR, { recursive: true }) } catch {}
+  const dest = join(UPLOAD_DIR, name)
+  writeFileSync(dest, buf)
+  return dest
+}
 
 /* --------- Lógica del bot --------- */
 async function handleUpdate (update) {
@@ -113,8 +138,25 @@ async function handleUpdate (update) {
     await reply(chatId, '⛔ No estás autorizado para usar este bot.')
     return
   }
+  // Foto o documento-imagen: la descargamos localmente y le pasamos la RUTA a
+  // Claude (que la lee con su herramienta de imágenes) + el caption como texto.
+  const media = pickMedia(msg)
+  if (media) {
+    try {
+      const path = await downloadTgFile(media.fileId, media.name)
+      const cap = (msg.caption || '').trim()
+      console.log(`🖼️ ${who} envió imagen → ${path}`)
+      const prompt = `[El usuario adjuntó una imagen. Está guardada localmente en: ${path} — ábrela con tu herramienta de lectura de imágenes.]${cap ? '\nComentario del usuario: ' + cap : ''}`
+      enqueue(prompt, chatId, who)
+    } catch (e) {
+      console.error('descarga imagen falló:', e.message)
+      await reply(chatId, '⚠️ No pude descargar la imagen: ' + (e.message || e))
+    }
+    return
+  }
+
   // Usuario autorizado → Claude con memoria (encolado en orden)
-  if (!text) { await reply(chatId, 'Mándame texto para pasárselo a Claude.'); return }
+  if (!text) { await reply(chatId, 'Mándame texto (o una imagen) para pasárselo a Claude.'); return }
   enqueue(text, chatId, who)
 }
 
