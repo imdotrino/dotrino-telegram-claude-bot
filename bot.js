@@ -70,6 +70,10 @@ const CLAUDE_CWD = cfg('CLAUDE_CWD') || process.cwd()
 const UPLOAD_DIR = join(CLAUDE_CWD, '.tg-uploads')   // fotos recibidas → aquí las lee Claude
 const CLAUDE_FLAGS = (cfg('CLAUDE_FLAGS') || '').split(/\s+/).filter(Boolean)
 const CLAUDE_TIMEOUT = Number(cfg('CLAUDE_TIMEOUT') || 0) * 1000   // segundos → ms; 0 = SIN límite (que demore lo que tenga que demorar)
+// Auto-compactación: cuando el contexto de la sesión supera estos tokens, se
+// lanza `/compact` para resumir y seguir ágil (evita chocar con el límite de
+// ventana). 0 = desactivado. Umbral holgado bajo el techo de 200k.
+const COMPACT_AT_TOKENS = Number(cfg('COMPACT_AT_TOKENS') || 150000)
 const TUNNEL_SERVER = cfg('TUNNEL_SERVER') || undefined   // undefined → default de la lib
 let busy = false
 const queue = []
@@ -193,6 +197,11 @@ async function runClaude (text, chatId, who) {
     }
     if (r.sid && r.sid !== sessionId) { sessionId = r.sid; setEnv('CLAUDE_SESSION_ID', r.sid) }
     await sendLong(chatId, String(r.result || '(sin respuesta)'))
+    // Auto-compactar si el contexto creció mucho (después de responder, no antes).
+    if (COMPACT_AT_TOKENS > 0 && r.tokens >= COMPACT_AT_TOKENS) {
+      console.log(`🗜️ contexto ~${r.tokens} tok ≥ ${COMPACT_AT_TOKENS} → /compact`)
+      await compact(chatId)
+    }
   } catch (e) {
     console.error('claude error:', e.message)
     await reply(chatId, '⚠️ Error con Claude: ' + (e.message || e))
@@ -203,9 +212,34 @@ async function claudeRun (text, useSession) {
   const args = ['-p', text, '--output-format', 'json', ...CLAUDE_FLAGS]
   if (useSession) args.push('--resume', useSession)
   const out = await runCmd(CLAUDE_BIN, args, CLAUDE_CWD, CLAUDE_TIMEOUT)
-  let result = out, sid = useSession
-  try { const j = JSON.parse(out); result = (j.result ?? out); sid = j.session_id || sid } catch {}
-  return { result, sid }
+  let result = out, sid = useSession, tokens = 0
+  try { const j = JSON.parse(out); result = (j.result ?? out); sid = j.session_id || sid; tokens = contextTokensOf(j) } catch {}
+  return { result, sid, tokens }
+}
+
+// Tamaño aproximado del prompt/contexto de la última vuelta = tokens enviados
+// (frescos + los cacheados que se re-envían). Es el mejor proxy de "cuánto creció".
+function contextTokensOf (j) {
+  const u = j && j.usage
+  if (!u) return 0
+  return (u.input_tokens || 0) + (u.cache_read_input_tokens || 0) + (u.cache_creation_input_tokens || 0)
+}
+
+// Lanza `/compact` en la sesión actual para resumir el historial y liberar
+// contexto. Conserva la memoria (el resumen) y el hilo sigue en la misma sesión.
+async function compact (chatId) {
+  if (!sessionId) return
+  await reply(chatId, '🗜️ El contexto creció bastante; lo compacto para seguir ágil…').catch(() => {})
+  try {
+    const args = ['-p', '/compact', '--output-format', 'json', '--resume', sessionId, ...CLAUDE_FLAGS]
+    const out = await runCmd(CLAUDE_BIN, args, CLAUDE_CWD, CLAUDE_TIMEOUT)
+    let ok = true
+    try { const j = JSON.parse(out); if (j.session_id) { sessionId = j.session_id; setEnv('CLAUDE_SESSION_ID', sessionId) } ok = !j.is_error } catch {}
+    await reply(chatId, ok ? '✅ Contexto compactado; sigo con el resumen.' : '⚠️ No se pudo compactar; sigo igual.').catch(() => {})
+  } catch (e) {
+    console.error('compact error:', e.message)
+    await reply(chatId, '⚠️ No se pudo compactar; sigo igual.').catch(() => {})
+  }
 }
 
 function runCmd (cmd, args, cwd, timeoutMs = 0) {

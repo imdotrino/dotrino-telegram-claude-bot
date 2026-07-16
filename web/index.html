@@ -58,16 +58,29 @@
   }
   a { color: var(--tg); }
   .wrap { max-width: 820px; margin: 0 auto; padding: 24px 20px 96px; }
-  header { text-align: center; padding: 32px 0 8px; }
-  .logo { width: 88px; height: 88px; border-radius: 22px; }
-  h1 { font-size: clamp(28px, 6vw, 40px); margin: 16px 0 6px; }
-  .tagline { color: var(--muted); font-size: 18px; margin: 0 auto; max-width: 42ch; }
-  .langbar { text-align: right; margin-bottom: 8px; }
-  .langbar button {
+  /* Topbar estándar Dotrino (§5): marca izquierda, acciones derecha (idioma + moneda). */
+  .topbar {
+    display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: .6rem;
+    padding: .7rem clamp(14px, 4vw, 22px); padding-top: calc(.7rem + env(safe-area-inset-top));
+    background: rgba(23, 19, 49, .85); backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--line); position: sticky; top: 0; z-index: 10;
+  }
+  .brand { display: flex; align-items: center; gap: 8px; color: var(--ink); text-decoration: none; font-weight: 700; }
+  .brand img { width: 28px; height: 28px; border-radius: 8px; }
+  .actions { display: flex; align-items: center; gap: 10px; }
+  .lang { display: flex; gap: 6px; }
+  .lang button {
     background: none; border: 1px solid var(--line); color: var(--muted);
     border-radius: 8px; padding: 4px 10px; cursor: pointer; font: inherit; font-size: 14px;
   }
-  .langbar button.on { color: var(--ink); border-color: var(--tg); }
+  .lang button.on { color: var(--ink); border-color: var(--tg); }
+  /* Móvil: la marca se queda a la izquierda y las acciones bajan a una segunda fila. */
+  @media (max-width: 560px) { .topbar .actions { flex-basis: 100%; justify-content: flex-end; } }
+
+  .hero { text-align: center; padding: 32px 0 8px; }
+  .logo { width: 88px; height: 88px; border-radius: 22px; }
+  h1 { font-size: clamp(28px, 6vw, 40px); margin: 16px 0 6px; }
+  .tagline { color: var(--muted); font-size: 18px; margin: 0 auto; max-width: 42ch; }
   h2 { font-size: 22px; margin: 40px 0 12px; }
   p { margin: 12px 0; }
   .card { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 18px 20px; margin: 14px 0; }
@@ -93,18 +106,27 @@
 </style>
 </head>
 <body>
-<div class="wrap">
-  <div class="langbar">
-    <button id="lang-es" class="on" onclick="setLang('es')">ES</button>
-    <button id="lang-en" onclick="setLang('en')">EN</button>
+<header class="topbar">
+  <a class="brand" href="./">
+    <img src="icon.svg" alt="" width="28" height="28" onerror="this.style.display='none'">
+    <span>Telegram Bot</span>
+  </a>
+  <div class="actions">
+    <div class="lang" role="group" aria-label="es / en">
+      <button id="lang-es" class="on" onclick="setLang('es')">ES</button>
+      <button id="lang-en" onclick="setLang('en')">EN</button>
+    </div>
+    <dotrino-support contact href="https://ko-fi.com/dotrino" repo="imdotrino/dotrino-telegram-claude-bot" discord="https://discord.gg/D648uq7cth"></dotrino-support>
   </div>
+</header>
 
-  <header>
+<div class="wrap">
+  <div class="hero">
     <img class="logo" src="icon.svg" alt="Dotrino Telegram Bot" onerror="this.style.display='none'">
     <h1>Telegram Bot</h1>
     <p class="tagline" data-lang="es">Chatea con un asistente de IA desde Telegram, corriendo en <b>tu</b> máquina, con memoria. Solo te responde a ti.</p>
     <p class="tagline" data-lang="en">Chat with an AI assistant from Telegram, running on <b>your</b> machine, with memory. It only answers you.</p>
-  </header>
+  </div>
 
   <!-- Qué es -->
   <section>
@@ -197,7 +219,6 @@ pm2 save &amp;&amp; pm2 startup</code></pre>
   </footer>
 </div>
 
-<dotrino-support contact></dotrino-support>
 <script type="module" src="https://cdn.jsdelivr.net/npm/@dotrino/support@0.7/src/index.js"></script>
 <script>
   function setLang(l) {
