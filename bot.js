@@ -74,6 +74,11 @@ const CLAUDE_TIMEOUT = Number(cfg('CLAUDE_TIMEOUT') || 0) * 1000   // segundos �
 // lanza `/compact` para resumir y seguir ágil (evita chocar con el límite de
 // ventana). 0 = desactivado. Umbral holgado bajo el techo de 200k.
 const COMPACT_AT_TOKENS = Number(cfg('COMPACT_AT_TOKENS') || 150000)
+// Auto-compactación por INACTIVIDAD: si al llegar un nuevo mensaje pasaron más de
+// estas horas desde el anterior, se compacta antes de responder (contexto "frío":
+// retomas con un resumen). 0 = desactivado. Se persiste la marca de tiempo.
+const COMPACT_AFTER_IDLE_HOURS = Number(cfg('COMPACT_AFTER_IDLE_HOURS') || 6)
+let lastRequestTs = Number(cfg('LAST_REQUEST_TS') || 0)
 const TUNNEL_SERVER = cfg('TUNNEL_SERVER') || undefined   // undefined → default de la lib
 let busy = false
 const queue = []
@@ -184,6 +189,9 @@ async function runClaude (text, chatId, who) {
   api('sendChatAction', { chat_id: chatId, action: 'typing' }).catch(() => {})
   const typing = setInterval(() => api('sendChatAction', { chat_id: chatId, action: 'typing' }).catch(() => {}), 5000)
   try {
+    // Compactar si pasó mucho tiempo desde el último mensaje (usa la marca previa).
+    await maybeCompactByIdle(chatId)
+    markActivity()
     let r
     try {
       r = await claudeRun(text, sessionId)
@@ -225,11 +233,25 @@ function contextTokensOf (j) {
   return (u.input_tokens || 0) + (u.cache_read_input_tokens || 0) + (u.cache_creation_input_tokens || 0)
 }
 
+// Marca de actividad: recuerda cuándo fue el último mensaje (persistida para
+// que el chequeo de inactividad sobreviva reinicios del bot).
+function markActivity () { lastRequestTs = Date.now(); setEnv('LAST_REQUEST_TS', String(lastRequestTs)) }
+
+// Compacta si pasaron más de COMPACT_AFTER_IDLE_HOURS desde el mensaje anterior.
+async function maybeCompactByIdle (chatId) {
+  if (!sessionId || COMPACT_AFTER_IDLE_HOURS <= 0 || !lastRequestTs) return
+  const idleMs = Date.now() - lastRequestTs
+  if (idleMs < COMPACT_AFTER_IDLE_HOURS * 3600_000) return
+  const h = Math.max(1, Math.round(idleMs / 3600_000))
+  console.log(`🕒 ~${h}h desde el último request → /compact`)
+  await compact(chatId, `🕒 Pasaron ~${h} h desde el último mensaje; compacto el contexto para retomar fresco…`)
+}
+
 // Lanza `/compact` en la sesión actual para resumir el historial y liberar
 // contexto. Conserva la memoria (el resumen) y el hilo sigue en la misma sesión.
-async function compact (chatId) {
+async function compact (chatId, intro) {
   if (!sessionId) return
-  await reply(chatId, '🗜️ El contexto creció bastante; lo compacto para seguir ágil…').catch(() => {})
+  await reply(chatId, intro || '🗜️ El contexto creció bastante; lo compacto para seguir ágil…').catch(() => {})
   try {
     const args = ['-p', '/compact', '--output-format', 'json', '--resume', sessionId, ...CLAUDE_FLAGS]
     const out = await runCmd(CLAUDE_BIN, args, CLAUDE_CWD, CLAUDE_TIMEOUT)

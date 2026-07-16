@@ -1,6 +1,6 @@
 {
   "name": "dotrino-telegram-claude-bot",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "type": "module",
   "description": "Bot de Telegram que conversa con Claude (con memoria), expuesto sin abrir puertos con @dotrino/tunnel. Solo para el usuario autorizado.",
   "keywords": [

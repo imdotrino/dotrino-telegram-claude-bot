@@ -45,6 +45,7 @@ Por **variables de entorno** o por un archivo **`.env`** (en el cwd, o el que in
 | `ALLOWED_USER_ID` | *(vacío → no atiende)* | id de Telegram autorizado (vacío = solo responde id + cómo autorizar) |
 | `CLAUDE_BIN` | `claude` | binario de claude |
 | `COMPACT_AT_TOKENS` | `150000` | auto `/compact` cuando el contexto supera N tokens (0 = off) |
+| `COMPACT_AFTER_IDLE_HOURS` | `6` | auto `/compact` al retomar tras N horas sin mensajes (0 = off) |
 | `TUNNEL_SERVER` | `https://r.dotrino.com` | relay del túnel |
 | `TUNNEL_KEY` / `TG_WEBHOOK_SECRET` / `CLAUDE_SESSION_ID` | autogenerados | URL estable / validación / memoria |
 
