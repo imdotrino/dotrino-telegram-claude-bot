@@ -161,7 +161,11 @@
 BOT_ENV=/ruta/mi-bot.env  npx dotrino-telegram-claude-bot@latest
 TELEGRAM_BOT_TOKEN=123:ABC  npx dotrino-telegram-claude-bot@latest   # todo por env</code></pre>
     <div class="card" data-lang="es"><p>Usa siempre <code>@latest</code>: npx cachea y sin eso podrías quedarte con una versión vieja. Al arrancar imprime tu <b>URL pública</b> y registra el webhook solo.</p></div>
+    <p data-lang="es">¿No tienes Node instalado? <a href="https://install.dotrino.com/">Un comando</a> se encarga, sin pedirte permisos de administrador:</p>
+    <pre data-lang="es"><code>curl -fsSL https://install.dotrino.com/install.sh | sh -s -- dotrino-telegram-claude-bot ./mi-bot.env</code></pre>
     <div class="card" data-lang="en"><p>Always use <code>@latest</code>: npx caches, and without it you could stay on an old version. On start it prints your <b>public URL</b> and registers the webhook by itself.</p></div>
+    <p data-lang="en">No Node installed? <a href="https://install.dotrino.com/">One command</a> takes care of it, without asking for admin rights:</p>
+    <pre data-lang="en"><code>curl -fsSL https://install.dotrino.com/install.sh | sh -s -- dotrino-telegram-claude-bot ./my-bot.env</code></pre>
   </section>
 
   <!-- Configuración -->
