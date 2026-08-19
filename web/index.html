@@ -58,24 +58,15 @@
   }
   a { color: var(--tg); }
   .wrap { max-width: 820px; margin: 0 auto; padding: 24px 20px 96px; }
-  /* Topbar estándar Dotrino (§5): marca izquierda, acciones derecha (idioma + moneda). */
-  .topbar {
-    display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: .6rem;
-    padding: .7rem clamp(14px, 4vw, 22px); padding-top: calc(.7rem + env(safe-area-inset-top));
-    background: rgba(23, 19, 49, .85); backdrop-filter: blur(8px);
-    border-bottom: 1px solid var(--line); position: sticky; top: 0; z-index: 10;
+  /* La barra la trae <dotrino-topbar> (§5): layout, fila movil y safe-area son
+     suyos. Aqui solo se le pasa la paleta morada de esta pagina. */
+  dotrino-topbar {
+    --dotrino-topbar-bg: rgba(23, 19, 49, .85);
+    --dotrino-topbar-border: #2b2450;
+    --dotrino-topbar-text: #eee9ff;
+    --dotrino-topbar-muted: #a79fce;
+    --dotrino-topbar-accent: #2aabee;
   }
-  .brand { display: flex; align-items: center; gap: 8px; color: var(--ink); text-decoration: none; font-weight: 700; }
-  .brand img { width: 28px; height: 28px; border-radius: 8px; }
-  .actions { display: flex; align-items: center; gap: 10px; }
-  .lang { display: flex; gap: 6px; }
-  .lang button {
-    background: none; border: 1px solid var(--line); color: var(--muted);
-    border-radius: 8px; padding: 4px 10px; cursor: pointer; font: inherit; font-size: 14px;
-  }
-  .lang button.on { color: var(--ink); border-color: var(--tg); }
-  /* Móvil: la marca se queda a la izquierda y las acciones bajan a una segunda fila. */
-  @media (max-width: 560px) { .topbar .actions { flex-basis: 100%; justify-content: flex-end; } }
 
   .hero { text-align: center; padding: 32px 0 8px; }
   .logo { width: 88px; height: 88px; border-radius: 22px; }
@@ -106,19 +97,15 @@
 </style>
 </head>
 <body>
-<header class="topbar">
-  <a class="brand" href="./">
-    <img src="icon.svg" alt="" width="28" height="28" onerror="this.style.display='none'">
-    <span>Telegram Bot</span>
-  </a>
-  <div class="actions">
-    <div class="lang" role="group" aria-label="es / en">
-      <button id="lang-es" class="on" onclick="setLang('es')">ES</button>
-      <button id="lang-en" onclick="setLang('en')">EN</button>
-    </div>
-    <dotrino-support contact href="https://ko-fi.com/dotrino" repo="imdotrino/dotrino-telegram-claude-bot" discord="https://discord.gg/D648uq7cth"></dotrino-support>
-  </div>
-</header>
+<!-- Barra estandar del ecosistema (CONVENCIONES §5): marca + idioma + support.
+     Sin `profile`: una landing de servicio no tiene usuario (§1.2). -->
+<dotrino-topbar
+  brand="Telegram Bot"
+  icon="icon.svg"
+  no-back
+  support-repo="imdotrino/dotrino-telegram-claude-bot"
+  support-discord="https://discord.gg/D648uq7cth"
+  support-contact></dotrino-topbar>
 
 <div class="wrap">
   <div class="hero">
@@ -223,20 +210,13 @@ pm2 save &amp;&amp; pm2 startup</code></pre>
   </footer>
 </div>
 
-<script type="module" src="https://cdn.jsdelivr.net/npm/@dotrino/support@0.7/src/index.js"></script>
+<!-- OJO: por CDN el topbar va SIEMPRE con `+esm` (sus imports desnudos no
+     resuelven en el navegador). Trae dentro nav + support. -->
+<script type="module" src="https://cdn.jsdelivr.net/npm/@dotrino/topbar@0.8/+esm"></script>
 <script>
-  function setLang(l) {
-    document.documentElement.lang = l;
-    document.getElementById('lang-es').classList.toggle('on', l === 'es');
-    document.getElementById('lang-en').classList.toggle('on', l === 'en');
-    try { localStorage.setItem('lang', l); } catch (e) {}
-  }
-  (function () {
-    var saved;
-    try { saved = localStorage.getItem('lang'); } catch (e) {}
-    var l = saved || (navigator.language || 'es').slice(0, 2);
-    setLang(l === 'en' ? 'en' : 'es');
-  })();
+  // El idioma lo lleva <dotrino-topbar>: persiste la preferencia y pone
+  // document.documentElement.lang, que es de lo que cuelgan los bloques
+  // [data-lang] de esta pagina. Aqui no hay que hacer nada mas.
 </script>
 </body>
 </html>
