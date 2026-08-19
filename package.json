@@ -31,9 +31,14 @@
     "node": ">=20"
   },
   "scripts": {
-    "start": "node bot.js"
+    "start": "node bot.js",
+    "type-check": "tsc --noEmit"
   },
   "dependencies": {
     "@dotrino/tunnel": "0.1.5"
+  },
+  "devDependencies": {
+    "typescript": "5.9.3",
+    "@types/node": "^22.0.0"
   }
 }
