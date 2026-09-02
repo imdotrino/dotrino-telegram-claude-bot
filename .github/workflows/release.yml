@@ -1,0 +1,63 @@
+# Publica dotrino-telegram-claude-bot DESDE CI, no desde el portátil de nadie.
+#
+# Sin ningún token: npm cambia un credencial efímero por la identidad OIDC de esta
+# ejecución (publicación de confianza), y firma la procedencia él solo. La confianza se
+# declara en npmjs.com, por paquete: repo `imdotrino/dotrino-telegram-claude-bot` y workflow `release.yml`.
+# **El nombre de este archivo tiene que coincidir exacto** — si se renombra, hay que
+# cambiarlo también allí o la publicación se cae.
+#
+# Y un SBOM por release, que el CRA da por supuesto y npm no aloja (CUMPLIMIENTO.md §2).
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write      # crear la release y subirle el SBOM
+  id-token: write      # OIDC: la publicación de confianza y la atestación
+  attestations: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          # La publicación de confianza pide Node ≥22.14 y npm ≥11.5.1, y Node 22 trae
+          # npm 10: por eso el paso siguiente lo sube. NO se fija una versión exacta —
+          # npm 12 exige `^22.22.2`, así que un pin en 22.14 deja el `npm i -g` sin poder
+          # instalarse (pasó en dotrino-vault).
+          node-version: 22
+          cache: npm
+          registry-url: https://registry.npmjs.org
+
+      - run: npm i -g npm@latest
+      - run: npm ci
+
+      # SIN PRUEBAS. `dotrino-telegram-claude-bot` no tiene script `test`, y se dice aquí en vez de
+      # simular que sí: publicar sin red es una decisión, no un descuido. Es deuda.
+      - run: echo "::warning::este paquete se publica SIN pruebas"
+
+      - name: SBOM (CycloneDX)
+        run: |
+          npx --yes @cyclonedx/cyclonedx-npm@latest \
+            --omit dev --output-format JSON \
+            --output-file "sbom-$(node -p "require('./package.json').version").cdx.json"
+
+      - name: Atestiguar el SBOM
+        uses: actions/attest-build-provenance@v1
+        with:
+          subject-path: 'sbom-*.cdx.json'
+
+      # La procedencia sale sola: npm la genera y la firma, sin `--provenance`.
+      - name: Publicar en npm
+        run: npm publish --access public
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: 'sbom-*.cdx.json'
+          generate_release_notes: true
