@@ -3,4 +3,6 @@ node_modules/
 *.env
 *.log
 ecosystem.config.cjs
-package-lock.json
+# El lock SÍ va al repo: manda sobre las versiones (CONVENCIONES §1.1, `save-exact`) y
+# sin él la CI ni siquiera arranca — `setup-node` con `cache: npm` corta con
+# «Dependencies lock file is not found», que es lo que impedía publicar desde CI.
