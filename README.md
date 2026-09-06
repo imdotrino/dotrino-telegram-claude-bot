@@ -12,15 +12,23 @@ encadenada (memoria). Útil como asistente personal de Claude desde el teléfono
 
 ## Uso rápido (npx)
 
+> **El paquete se llama `@dotrino/telegram-bot` desde la 0.2.0.** Hasta la 0.1.3 se
+> publicó como `dotrino-telegram-claude-bot`, fuera del scope y con el modelo de IA en el
+> nombre — las dos cosas van contra lo que ya hacía el resto (`@dotrino/vaultd`,
+> `@dotrino/sealers`, `@dotrino/tunnel`) y contra la razón por la que el subdominio es
+> `telegram-bot.dotrino.com` y no `claude-bot`: el modelo es intercambiable
+> (CONVENCIONES §1.2). El comando `dotrino-telegram-claude-bot` sigue existiendo como
+> alias para no romper lo que ya corre; el nuevo es `dotrino-telegram-bot`.
+
 ```sh
 # 1) crea un bot con @BotFather y copia el token
 # 2) prepará un .env (ver .env.example) y apuntá el bot a ese archivo:
-npx dotrino-telegram-claude-bot@latest ./mi-bot.env
+npx @dotrino/telegram-bot@latest ./mi-bot.env
 
 # alternativas equivalentes:
-npx dotrino-telegram-claude-bot@latest --env /ruta/mi-bot.env
-BOT_ENV=/ruta/mi-bot.env  npx dotrino-telegram-claude-bot@latest
-TELEGRAM_BOT_TOKEN=123:ABC  npx dotrino-telegram-claude-bot@latest   # sin archivo, todo por env
+npx @dotrino/telegram-bot@latest --env /ruta/mi-bot.env
+BOT_ENV=/ruta/mi-bot.env  npx @dotrino/telegram-bot@latest
+TELEGRAM_BOT_TOKEN=123:ABC  npx @dotrino/telegram-bot@latest   # sin archivo, todo por env
 ```
 
 > Usá **`@latest`**: `npx` cachea, y sin eso podrías quedarte con una versión vieja.

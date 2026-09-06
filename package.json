@@ -1,6 +1,6 @@
 {
-  "name": "dotrino-telegram-claude-bot",
-  "version": "0.1.6",
+  "name": "@dotrino/telegram-bot",
+  "version": "0.2.0",
   "type": "module",
   "description": "Bot de Telegram que conversa con Claude (con memoria), expuesto sin abrir puertos con @dotrino/tunnel. Solo para el usuario autorizado.",
   "keywords": [
@@ -20,6 +20,7 @@
     "url": "https://github.com/imdotrino/dotrino-telegram-claude-bot"
   },
   "bin": {
+    "dotrino-telegram-bot": "bot.js",
     "dotrino-telegram-claude-bot": "bot.js"
   },
   "files": [

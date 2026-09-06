@@ -141,12 +141,12 @@
       <li>Create a bot with <a href="https://t.me/BotFather">@BotFather</a> and copy the token.</li>
       <li>Prepare an <code>.env</code> file (see the example below) and point the bot to it:</li>
     </ol>
-    <pre><code>npx dotrino-telegram-claude-bot@latest ./mi-bot.env</code></pre>
+    <pre><code>npx @dotrino/telegram-bot@latest ./mi-bot.env</code></pre>
     <p data-lang="es">Formas equivalentes:</p>
     <p data-lang="en">Equivalent forms:</p>
-    <pre><code>npx dotrino-telegram-claude-bot@latest --env /ruta/mi-bot.env
-BOT_ENV=/ruta/mi-bot.env  npx dotrino-telegram-claude-bot@latest
-TELEGRAM_BOT_TOKEN=123:ABC  npx dotrino-telegram-claude-bot@latest   # todo por env</code></pre>
+    <pre><code>npx @dotrino/telegram-bot@latest --env /ruta/mi-bot.env
+BOT_ENV=/ruta/mi-bot.env  npx @dotrino/telegram-bot@latest
+TELEGRAM_BOT_TOKEN=123:ABC  npx @dotrino/telegram-bot@latest   # todo por env</code></pre>
     <div class="card" data-lang="es"><p>Usa siempre <code>@latest</code>: npx cachea y sin eso podrías quedarte con una versión vieja. Al arrancar imprime tu <b>URL pública</b> y registra el webhook solo.</p></div>
     <p data-lang="es">¿No tienes Node instalado? <a href="https://install.dotrino.com/">Un comando</a> se encarga, sin pedirte permisos de administrador:</p>
     <pre data-lang="es"><code>curl -fsSL https://install.dotrino.com/install.sh | sh -s -- dotrino-telegram-claude-bot ./mi-bot.env</code></pre>
