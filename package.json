@@ -17,7 +17,7 @@
   "homepage": "https://github.com/imdotrino/dotrino-telegram-claude-bot",
   "repository": {
     "type": "git",
-    "url": "https://github.com/imdotrino/dotrino-telegram-claude-bot"
+    "url": "git+https://github.com/imdotrino/dotrino-telegram-claude-bot.git"
   },
   "bin": {
     "dotrino-telegram-bot": "bot.js",
