@@ -27,6 +27,15 @@ jobs:
         run: |
           COMMIT=${GITHUB_SHA::7}
           sed -i "s|</head>|  <meta name=\"commit\" content=\"$COMMIT\" />\\n</head>|" web/index.html
+      # EL HASH DEL BUILD A LA VISTA (CONVENCIONES §3). Una landing estática no tiene build
+      # donde inyectarlo, así que lo pone el propio despliegue: es el único que sabe de qué
+      # commit sale lo que se sube. Sin esto no hay forma de comprobar qué versión sirve el
+      # dominio, que es justo lo que hace falta cuando el borde o un service worker
+      # devuelven una copia vieja.
+      - name: Sellar el commit en la página
+        run: |
+          sed -i "s|</head>|  <meta name=\"commit\" content=\"${GITHUB_SHA::7}\">\n</head>|" web/index.html
+          grep -o 'name="commit" content="[^"]*"' web/index.html
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
