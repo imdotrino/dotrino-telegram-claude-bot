@@ -17,12 +17,24 @@ encadenada (memoria). Útil como asistente personal de Claude desde el teléfono
 > nombre — las dos cosas van contra lo que ya hacía el resto (`@dotrino/vaultd`,
 > `@dotrino/sealers`, `@dotrino/tunnel`) y contra la razón por la que el subdominio es
 > `telegram-bot.dotrino.com` y no `claude-bot`: el modelo es intercambiable
-> (CONVENCIONES §1.2). El comando `dotrino-telegram-claude-bot` sigue existiendo como
-> alias para no romper lo que ya corre; el nuevo es `dotrino-telegram-bot`.
+> (CONVENCIONES §1.2).
+>
+> ⚠️ **Si arrancabas el bot con el nombre viejo, hay que cambiarlo.** El nombre de paquete
+> `dotrino-telegram-claude-bot` **se despublicó de npm el 2026-09-06**: `npx
+> dotrino-telegram-claude-bot@latest` ya no se queda con una versión vieja, da **404 en
+> cada intento**. Lo que sobrevive es el nombre del EJECUTABLE (sigue existiendo el alias
+> `dotrino-telegram-claude-bot`, además de `dotrino-telegram-bot`), y con `npx` lo que se
+> escribe es el paquete, no el ejecutable — de ahí la confusión.
+>
+> Y no falla de forma silenciosa: un supervisor que reinicie ese lanzador (PM2, systemd con
+> `Restart=always`) entra en una tormenta de reintentos, cada uno levantando un `npm` que
+> va al registro. Se ve como **una máquina con un núcleo comido por `npm exec
+> dotrino-telegram-claude-bot@latest`**, y el bot ni siquiera llegó a arrancar. Pasó el
+> 2026-09-10.
 
 ```sh
 # 1) crea un bot con @BotFather y copia el token
-# 2) prepará un .env (ver .env.example) y apuntá el bot a ese archivo:
+# 2) prepara un .env (ver .env.example) y apunta el bot a ese archivo:
 npx @dotrino/telegram-bot@latest ./mi-bot.env
 
 # alternativas equivalentes:
@@ -31,13 +43,13 @@ BOT_ENV=/ruta/mi-bot.env  npx @dotrino/telegram-bot@latest
 TELEGRAM_BOT_TOKEN=123:ABC  npx @dotrino/telegram-bot@latest   # sin archivo, todo por env
 ```
 
-> Usá **`@latest`**: `npx` cachea, y sin eso podrías quedarte con una versión vieja.
+> Usa **`@latest`**: `npx` cachea, y sin eso podrías quedarte con una versión vieja.
 
-Imprime tu **URL pública** y registra el webhook solo. Con un `.env` por bot levantás
+Imprime tu **URL pública** y registra el webhook solo. Con un `.env` por bot levantas
 **varios** (cada uno su token, su túnel y su carpeta) apuntando a archivos distintos.
 
 Si `ALLOWED_USER_ID` está vacío, el bot **no atiende a nadie**: a cada mensaje responde
-con el id de quien escribe y cómo autorizarlo. Poné `ALLOWED_USER_ID=<tu id>` en el `.env`
+con el id de quien escribe y cómo autorizarlo. Pon `ALLOWED_USER_ID=<tu id>` en el `.env`
 y reiniciá (no captura a nadie automáticamente, así nadie se autoriza por escribir primero).
 
 ## Configuración
@@ -80,9 +92,9 @@ Telegram ──HTTPS──▶ r.dotrino.com/<key>/tg ──▶ [túnel] ──�
 
 ```sh
 pm2 start "$(npm root -g)/dotrino-telegram-claude-bot/bot.js" --name mi-bot --cwd /mi/proyecto
-pm2 save && pm2 startup    # (corré el comando sudo que imprime)
+pm2 save && pm2 startup    # (ejecuta el comando sudo que imprime)
 ```
-Para **varios bots** (cada uno su token, su túnel y su carpeta), usá un `.env` por bot y un
+Para **varios bots** (cada uno su token, su túnel y su carpeta), usa un `.env` por bot y un
 `ecosystem.config.cjs` de PM2 con `BOT_ENV` distinto por app.
 
 MIT · parte de Dotrino.

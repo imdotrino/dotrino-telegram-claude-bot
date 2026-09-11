@@ -149,10 +149,10 @@ BOT_ENV=/ruta/mi-bot.env  npx @dotrino/telegram-bot@latest
 TELEGRAM_BOT_TOKEN=123:ABC  npx @dotrino/telegram-bot@latest   # todo por env</code></pre>
     <div class="card" data-lang="es"><p>Usa siempre <code>@latest</code>: npx cachea y sin eso podrías quedarte con una versión vieja. Al arrancar imprime tu <b>URL pública</b> y registra el webhook solo.</p></div>
     <p data-lang="es">¿No tienes Node instalado? <a href="https://install.dotrino.com/">Un comando</a> se encarga, sin pedirte permisos de administrador:</p>
-    <pre data-lang="es"><code>curl -fsSL https://install.dotrino.com/install.sh | sh -s -- dotrino-telegram-claude-bot ./mi-bot.env</code></pre>
+    <pre data-lang="es"><code>curl -fsSL https://install.dotrino.com/install.sh | sh -s -- @dotrino/telegram-bot ./mi-bot.env</code></pre>
     <div class="card" data-lang="en"><p>Always use <code>@latest</code>: npx caches, and without it you could stay on an old version. On start it prints your <b>public URL</b> and registers the webhook by itself.</p></div>
     <p data-lang="en">No Node installed? <a href="https://install.dotrino.com/">One command</a> takes care of it, without asking for admin rights:</p>
-    <pre data-lang="en"><code>curl -fsSL https://install.dotrino.com/install.sh | sh -s -- dotrino-telegram-claude-bot ./my-bot.env</code></pre>
+    <pre data-lang="en"><code>curl -fsSL https://install.dotrino.com/install.sh | sh -s -- @dotrino/telegram-bot ./my-bot.env</code></pre>
   </section>
 
   <!-- Configuración -->
@@ -193,14 +193,14 @@ TELEGRAM_BOT_TOKEN=123:ABC  npx @dotrino/telegram-bot@latest   # todo por env</c
   <section>
     <h2 data-lang="es">Correr siempre (PM2)</h2>
     <h2 data-lang="en">Keep it running (PM2)</h2>
-    <pre><code>pm2 start "$(npm root -g)/dotrino-telegram-claude-bot/bot.js" --name mi-bot --cwd /mi/proyecto
+    <pre><code>pm2 start "$(npm root -g)/@dotrino/telegram-bot/bot.js" --name mi-bot --cwd /mi/proyecto
 pm2 save &amp;&amp; pm2 startup</code></pre>
     <p data-lang="es">Con un <code>.env</code> por bot levantas <b>varios</b> (cada uno su token, su túnel y su carpeta).</p>
     <p data-lang="en">With one <code>.env</code> per bot you can run <b>several</b> (each with its own token, tunnel and folder).</p>
   </section>
 
   <section style="text-align:center; margin-top:32px">
-    <a class="cta" href="https://www.npmjs.com/package/dotrino-telegram-claude-bot">npm</a>
+    <a class="cta" href="https://www.npmjs.com/package/@dotrino/telegram-bot">npm</a>
     <a class="cta ghost" href="https://github.com/imdotrino/dotrino-telegram-claude-bot">GitHub</a>
     <a class="cta ghost" href="https://dotrino.com/">Dotrino</a>
   </section>
