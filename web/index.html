@@ -98,8 +98,8 @@
 </head>
 <body>
 <!-- Barra estandar del ecosistema (CONVENCIONES §5): marca + idioma + support.
-     Sin `profile`: una landing de servicio no tiene usuario (§1.2). -->
-<dotrino-topbar
+     Con `profile` como toda página (§5): sin bóveda, el menú lleva a profile.dotrino.com. -->
+<dotrino-topbar profile
   brand="Telegram Bot"
   icon="icon.svg"
   no-back
@@ -212,7 +212,7 @@ pm2 save &amp;&amp; pm2 startup</code></pre>
 
 <!-- OJO: por CDN el topbar va SIEMPRE con `+esm` (sus imports desnudos no
      resuelven en el navegador). Trae dentro nav + support. -->
-<script type="module" src="https://cdn.jsdelivr.net/npm/@dotrino/topbar@0.8/+esm"></script>
+<script type="module" src="https://cdn.jsdelivr.net/npm/@dotrino/topbar@0.12/+esm"></script>
 <script>
   // El idioma lo lleva <dotrino-topbar>: persiste la preferencia y pone
   // document.documentElement.lang, que es de lo que cuelgan los bloques
