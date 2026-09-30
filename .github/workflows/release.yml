@@ -37,6 +37,10 @@ jobs:
 
       - run: npm i -g npm@latest
       - run: npm ci
+      # El registro de compatibilidad (dotrino-roadmap, CONVENCIONES §14): nada instalado en
+      # una versión marcada rota ni por debajo de lo que exige la ficha. Con @latest, que trae
+      # la lista de rotas más nueva. Va antes de publicar: aquí sí frena.
+      - run: npx --yes @dotrino/roadmap@latest check
 
       # SIN PRUEBAS. `dotrino-telegram-claude-bot` no tiene script `test`, y se dice aquí en vez de
       # simular que sí: publicar sin red es una decisión, no un descuido. Es deuda.
