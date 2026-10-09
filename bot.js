@@ -23,6 +23,7 @@ import { spawn } from 'node:child_process'
 import { dirname, join } from 'node:path'
 import { randomBytes } from 'node:crypto'
 import { createTunnel } from '@dotrino/tunnel'
+import { watchForUpdate } from '@dotrino/update'
 
 /* --------- Config (.env: arg CLI o --env, si no BOT_ENV, si no ./.env del cwd) --------- */
 const _argv = process.argv.slice(2)
@@ -309,6 +310,13 @@ const tun = createTunnel({
       ? `\nUsuario autorizado: ${ALLOWED}. Esperando mensajes…`
       : '\n👉 Mándale un mensaje al bot para capturar el usuario autorizado…')
   },
+})
+
+// §15: el bot corre semanas seguidas. Mira al arrancar y una vez al día, y lo dice en el log.
+const { version: VERSION } = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8'))
+watchForUpdate({
+  current: VERSION, source: 'npm', pkg: '@dotrino/telegram-bot',
+  onNewer: (r) => console.log(`[update] @dotrino/telegram-bot ${r.version} is available (running ${r.current}): npm i -g @dotrino/telegram-bot`)
 })
 
 process.on('SIGINT', () => { console.log('\ncerrando…'); tun.close(); process.exit(0) })
