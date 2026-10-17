@@ -56,10 +56,10 @@ const genB62 = (n) => {
 
 const TOKEN = cfg('TELEGRAM_BOT_TOKEN')
 if (!TOKEN) {
-  console.error(`Falta TELEGRAM_BOT_TOKEN.
-Pásalo por variable de entorno o en un .env (en el cwd, o el que indique BOT_ENV):
-  TELEGRAM_BOT_TOKEN=<token de @BotFather>
-Opcionales: CLAUDE_CWD, CLAUDE_FLAGS, ALLOWED_USER_ID, TUNNEL_SERVER, CLAUDE_BIN`)
+  console.error(`Missing TELEGRAM_BOT_TOKEN.
+Pass it as an environment variable or in a .env (in the cwd, or the one BOT_ENV points to):
+  TELEGRAM_BOT_TOKEN=<token from @BotFather>
+Optional: CLAUDE_CWD, CLAUDE_FLAGS, ALLOWED_USER_ID, TUNNEL_SERVER, CLAUDE_BIN`)
   process.exit(1)
 }
 let SECRET = cfg('TG_WEBHOOK_SECRET'); if (!SECRET) { SECRET = randomBytes(24).toString('hex'); setEnv('TG_WEBHOOK_SECRET', SECRET) }
@@ -107,9 +107,9 @@ function pickMedia (msg) {
 }
 async function downloadTgFile (fileId, name) {
   const g = await api('getFile', { file_id: fileId })
-  if (!g.ok || !g.result || !g.result.file_path) throw new Error('getFile falló')
+  if (!g.ok || !g.result || !g.result.file_path) throw new Error('getFile failed')
   const res = await fetch(`https://api.telegram.org/file/bot${TOKEN}/${g.result.file_path}`)
-  if (!res.ok) throw new Error('descarga HTTP ' + res.status)
+  if (!res.ok) throw new Error('download HTTP ' + res.status)
   const buf = Buffer.from(await res.arrayBuffer())
   try { mkdirSync(UPLOAD_DIR, { recursive: true }) } catch {}
   const dest = join(UPLOAD_DIR, name)
@@ -134,7 +134,7 @@ async function handleUpdate (update) {
 
   // Sin usuario autorizado definido → SIEMPRE eco del id + cómo autorizarse (no captura).
   if (!ALLOWED) {
-    console.log(`ℹ️ sin ALLOWED_USER_ID — eco a ${who} (id ${from.id})`)
+    console.log(`ℹ️ no ALLOWED_USER_ID — echo to ${who} (id ${from.id})`)
     await reply(chatId,
       '🔓 Este bot todavía no tiene un usuario autorizado.\n\n' +
       `Tu id de Telegram es: ${from.id}\n\n` +
@@ -144,7 +144,7 @@ async function handleUpdate (update) {
     return
   }
   if (String(from.id) !== ALLOWED) {
-    console.log(`⛔ intento de ${who} (id ${from.id}) — no autorizado`)
+    console.log(`⛔ attempt from ${who} (id ${from.id}) — not authorized`)
     await reply(chatId, '⛔ No estás autorizado para usar este bot.')
     return
   }
@@ -155,11 +155,11 @@ async function handleUpdate (update) {
     try {
       const path = await downloadTgFile(media.fileId, media.name)
       const cap = (msg.caption || '').trim()
-      console.log(`🖼️ ${who} envió imagen → ${path}`)
+      console.log(`🖼️ ${who} sent an image → ${path}`)
       const prompt = `[El usuario adjuntó una imagen. Está guardada localmente en: ${path} — ábrela con tu herramienta de lectura de imágenes.]${cap ? '\nComentario del usuario: ' + cap : ''}`
       enqueue(prompt, chatId, who)
     } catch (e) {
-      console.error('descarga imagen falló:', e.message)
+      console.error('image download failed:', e.message)
       await reply(chatId, '⚠️ No pude descargar la imagen: ' + (e.message || e))
     }
     return
@@ -199,7 +199,7 @@ async function runClaude (text, chatId, who) {
     } catch (e) {
       // Sesión inválida/inexistente → empezar una nueva en vez de fallar.
       if (sessionId && /no conversation found|session/i.test(e.message || '')) {
-        console.log('sesión previa inválida → empiezo una nueva')
+        console.log('previous session invalid → starting a new one')
         sessionId = null; setEnv('CLAUDE_SESSION_ID', '')
         r = await claudeRun(text, null)
       } else throw e
@@ -208,7 +208,7 @@ async function runClaude (text, chatId, who) {
     await sendLong(chatId, String(r.result || '(sin respuesta)'))
     // Auto-compactar si el contexto creció mucho (después de responder, no antes).
     if (COMPACT_AT_TOKENS > 0 && r.tokens >= COMPACT_AT_TOKENS) {
-      console.log(`🗜️ contexto ~${r.tokens} tok ≥ ${COMPACT_AT_TOKENS} → /compact`)
+      console.log(`🗜️ context ~${r.tokens} tok >= ${COMPACT_AT_TOKENS} → /compact`)
       await compact(chatId)
     }
   } catch (e) {
@@ -244,7 +244,7 @@ async function maybeCompactByIdle (chatId) {
   const idleMs = Date.now() - lastRequestTs
   if (idleMs < COMPACT_AFTER_IDLE_HOURS * 3600_000) return
   const h = Math.max(1, Math.round(idleMs / 3600_000))
-  console.log(`🕒 ~${h}h desde el último request → /compact`)
+  console.log(`🕒 ~${h}h since the last request → /compact`)
   await compact(chatId, `🕒 Pasaron ~${h} h desde el último mensaje; compacto el contexto para retomar fresco…`)
 }
 
@@ -302,13 +302,13 @@ const tun = createTunnel({
     const webhookUrl = `${url}/tg`
     const r = await api('setWebhook', { url: webhookUrl, secret_token: SECRET, allowed_updates: ['message'], drop_pending_updates: true })
     const me = await api('getMe', {})
-    console.log('túnel  →', url)
+    console.log('tunnel →', url)
     console.log('webhook→', webhookUrl, '·', r.ok ? 'OK' : JSON.stringify(r))
     if (me.ok) console.log('bot    →', '@' + me.result.username, `(${me.result.first_name})`)
-    console.log('claude →', CLAUDE_BIN, 'en', CLAUDE_CWD, CLAUDE_FLAGS.length ? '· flags: ' + CLAUDE_FLAGS.join(' ') : '')
+    console.log('claude →', CLAUDE_BIN, 'in', CLAUDE_CWD, CLAUDE_FLAGS.length ? '· flags: ' + CLAUDE_FLAGS.join(' ') : '')
     console.log(ALLOWED
-      ? `\nUsuario autorizado: ${ALLOWED}. Esperando mensajes…`
-      : '\n👉 Mándale un mensaje al bot para capturar el usuario autorizado…')
+      ? `\nAuthorized user: ${ALLOWED}. Waiting for messages…`
+      : '\n👉 Send the bot a message to capture the authorized user…')
   },
 })
 
@@ -319,4 +319,4 @@ watchForUpdate({
   onNewer: (r) => console.log(`[update] @dotrino/telegram-bot ${r.version} is available (running ${r.current}): npm i -g @dotrino/telegram-bot`)
 })
 
-process.on('SIGINT', () => { console.log('\ncerrando…'); tun.close(); process.exit(0) })
+process.on('SIGINT', () => { console.log('\nshutting down…'); tun.close(); process.exit(0) })
