@@ -16,7 +16,8 @@
  *   CLAUDE_BIN          binario de claude                   (def: "claude")
  *   ALLOWED_USER_ID     id de Telegram autorizado           (def: captura al 1ro)
  *   TUNNEL_SERVER       relay del túnel                     (def: https://r.dotrino.com)
- *   TUNNEL_KEY / TG_WEBHOOK_SECRET / CLAUDE_SESSION_ID  se autogeneran y persisten.
+ *   TUNNEL_NAME         qué túnel (aparato de tu bóveda)  (def: telegram-bot)
+ *   TG_WEBHOOK_SECRET / CLAUDE_SESSION_ID  se autogeneran y persisten.
  */
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs'
 import { spawn } from 'node:child_process'
@@ -49,21 +50,19 @@ function setEnv (key, value) {
 }
 const fileEnv = loadEnvFile()
 const cfg = (k) => (process.env[k] !== undefined && process.env[k] !== '' ? process.env[k] : fileEnv[k])
-const genB62 = (n) => {
-  const b = randomBytes(n), A = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
-  let s = ''; for (let i = 0; i < n; i++) s += A[b[i] % 62]; return s
-}
 
 const TOKEN = cfg('TELEGRAM_BOT_TOKEN')
 if (!TOKEN) {
   console.error(`Missing TELEGRAM_BOT_TOKEN.
 Pass it as an environment variable or in a .env (in the cwd, or the one BOT_ENV points to):
   TELEGRAM_BOT_TOKEN=<token from @BotFather>
-Optional: CLAUDE_CWD, CLAUDE_FLAGS, ALLOWED_USER_ID, TUNNEL_SERVER, CLAUDE_BIN`)
+Optional: CLAUDE_CWD, CLAUDE_FLAGS, ALLOWED_USER_ID, TUNNEL_SERVER, TUNNEL_NAME, CLAUDE_BIN`)
   process.exit(1)
 }
 let SECRET = cfg('TG_WEBHOOK_SECRET'); if (!SECRET) { SECRET = randomBytes(24).toString('hex'); setEnv('TG_WEBHOOK_SECRET', SECRET) }
-let KEY = cfg('TUNNEL_KEY'); if (!KEY) { KEY = genB62(32); setEnv('TUNNEL_KEY', KEY) }
+// El túnel es un APARATO de tu cuenta (@dotrino/tunnel ≥ 0.2): su dirección sale de su llave
+// y se enrola una vez en tu bóveda. Ya no hay TUNNEL_KEY que cualquiera pudiera usar.
+const TUNNEL_NAME = cfg('TUNNEL_NAME') || 'telegram-bot'
 let ALLOWED = cfg('ALLOWED_USER_ID') || null
 let sessionId = cfg('CLAUDE_SESSION_ID') || null
 const CLAUDE_BIN = cfg('CLAUDE_BIN') || 'claude'
@@ -286,31 +285,40 @@ async function sendLong (chatId, text) {
 }
 
 /* --------- Túnel + webhook --------- */
-const tun = createTunnel({
-  key: KEY,
-  server: TUNNEL_SERVER,
-  quiet: true,
-  target: async (req) => {
-    if (req.headers['x-telegram-bot-api-secret-token'] !== SECRET) return { status: 401, body: 'unauthorized' }
-    if (req.method !== 'POST') return { status: 200, body: 'ok' }
-    let update = {}
-    try { update = JSON.parse(req.body ? req.body.toString() : '{}') } catch {}
-    handleUpdate(update).catch((e) => console.error('handler error:', e))
-    return { status: 200, headers: { 'content-type': 'application/json' }, body: '{"ok":true}' }
-  },
-  onReady: async (url) => {
-    const webhookUrl = `${url}/tg`
-    const r = await api('setWebhook', { url: webhookUrl, secret_token: SECRET, allowed_updates: ['message'], drop_pending_updates: true })
-    const me = await api('getMe', {})
-    console.log('tunnel →', url)
-    console.log('webhook→', webhookUrl, '·', r.ok ? 'OK' : JSON.stringify(r))
-    if (me.ok) console.log('bot    →', '@' + me.result.username, `(${me.result.first_name})`)
-    console.log('claude →', CLAUDE_BIN, 'in', CLAUDE_CWD, CLAUDE_FLAGS.length ? '· flags: ' + CLAUDE_FLAGS.join(' ') : '')
-    console.log(ALLOWED
-      ? `\nAuthorized user: ${ALLOWED}. Waiting for messages…`
-      : '\n👉 Send the bot a message to capture the authorized user…')
-  },
-})
+let tun
+try {
+  tun = await createTunnel({
+    name: TUNNEL_NAME,
+    server: TUNNEL_SERVER,
+    quiet: true,
+    target: async (req) => {
+      if (req.headers['x-telegram-bot-api-secret-token'] !== SECRET) return { status: 401, body: 'unauthorized' }
+      if (req.method !== 'POST') return { status: 200, body: 'ok' }
+      let update = {}
+      try { update = JSON.parse(req.body ? req.body.toString() : '{}') } catch {}
+      handleUpdate(update).catch((e) => console.error('handler error:', e))
+      return { status: 200, headers: { 'content-type': 'application/json' }, body: '{"ok":true}' }
+    },
+    onReady: async (url) => {
+      const webhookUrl = `${url}/tg`
+      const r = await api('setWebhook', { url: webhookUrl, secret_token: SECRET, allowed_updates: ['message'], drop_pending_updates: true })
+      const me = await api('getMe', {})
+      console.log('tunnel →', url)
+      console.log('webhook→', webhookUrl, '·', r.ok ? 'OK' : JSON.stringify(r))
+      if (me.ok) console.log('bot    →', '@' + me.result.username, `(${me.result.first_name})`)
+      console.log('claude →', CLAUDE_BIN, 'in', CLAUDE_CWD, CLAUDE_FLAGS.length ? '· flags: ' + CLAUDE_FLAGS.join(' ') : '')
+      console.log(ALLOWED
+        ? `\nAuthorized user: ${ALLOWED}. Waiting for messages…`
+        : '\n👉 Send the bot a message to capture the authorized user…')
+    },
+    onRejected: (_reason, message) => { console.error('tunnel rejected:', message); process.exit(1) },
+  })
+} catch (e) {
+  if (e.code !== 'TUNNEL_NOT_ENROLLED') throw e
+  console.error(`The tunnel "${TUNNEL_NAME}" is not enrolled in your vault yet. Enroll it once with:
+  npx @dotrino/tunnel enroll --name ${TUNNEL_NAME}`)
+  process.exit(1)
+}
 
 // §15: el bot corre semanas seguidas. Mira al arrancar y una vez al día, y lo dice en el log.
 const { version: VERSION } = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8'))

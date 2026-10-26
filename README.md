@@ -34,7 +34,9 @@ encadenada (memoria). Útil como asistente personal de Claude desde el teléfono
 
 ```sh
 # 1) crea un bot con @BotFather y copia el token
-# 2) prepara un .env (ver .env.example) y apunta el bot a ese archivo:
+# 2) enrola su túnel en tu bóveda (una vez; el túnel es un aparato de tu cuenta):
+npx @dotrino/tunnel@latest enroll --name telegram-bot
+# 3) prepara un .env (ver .env.example) y apunta el bot a ese archivo:
 npx @dotrino/telegram-bot@latest ./mi-bot.env
 
 # alternativas equivalentes:
@@ -45,17 +47,19 @@ TELEGRAM_BOT_TOKEN=123:ABC  npx @dotrino/telegram-bot@latest   # sin archivo, to
 
 > Usa **`@latest`**: `npx` cachea, y sin eso podrías quedarte con una versión vieja.
 
-Imprime tu **URL pública** y registra el webhook solo. Con un `.env` por bot levantas
-**varios** (cada uno su token, su túnel y su carpeta) apuntando a archivos distintos.
+Imprime tu **URL pública** y registra el webhook solo. La URL sale de la llave del túnel
+enrolado: solo ese aparato puede atenderla. Con un `.env` por bot levantas **varios**
+(cada uno su token, su `TUNNEL_NAME` —otro túnel enrolado— y su carpeta) apuntando a
+archivos distintos.
 
 Si `ALLOWED_USER_ID` está vacío, el bot **no atiende a nadie**: a cada mensaje responde
 con el id de quien escribe y cómo autorizarlo. Pon `ALLOWED_USER_ID=<tu id>` en el `.env`
-y reiniciá (no captura a nadie automáticamente, así nadie se autoriza por escribir primero).
+y reinicia (no captura a nadie automáticamente, así nadie se autoriza por escribir primero).
 
 ## Configuración
 
 Por **variables de entorno** o por un archivo **`.env`** (en el cwd, o el que indique
-`BOT_ENV`). Copiá [`.env.example`](./.env.example) → `.env`. Lo mínimo es el token:
+`BOT_ENV`). Copia [`.env.example`](./.env.example) → `.env`. Lo mínimo es el token:
 
 | Variable | Default | Qué es |
 |---|---|---|
@@ -67,7 +71,8 @@ Por **variables de entorno** o por un archivo **`.env`** (en el cwd, o el que in
 | `COMPACT_AT_TOKENS` | `150000` | auto `/compact` cuando el contexto supera N tokens (0 = off) |
 | `COMPACT_AFTER_IDLE_HOURS` | `6` | auto `/compact` al retomar tras N horas sin mensajes (0 = off) |
 | `TUNNEL_SERVER` | `https://r.dotrino.com` | relay del túnel |
-| `TUNNEL_KEY` / `TG_WEBHOOK_SECRET` / `CLAUDE_SESSION_ID` | autogenerados | URL estable / validación / memoria |
+| `TUNNEL_NAME` | `telegram-bot` | qué túnel enrolado usa (`npx @dotrino/tunnel enroll --name <n>`) |
+| `TG_WEBHOOK_SECRET` / `CLAUDE_SESSION_ID` | autogenerados | validación / memoria |
 
 ### `CLAUDE_FLAGS` — permisos y modelo
 - **Vacío (default, seguro):** Claude responde y lee, pero **no ejecuta comandos ni edita** sin permiso.
