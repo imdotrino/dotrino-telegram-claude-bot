@@ -26,11 +26,35 @@ import { randomBytes } from 'node:crypto'
 import { createTunnel } from '@dotrino/tunnel'
 import { watchForUpdate } from '@dotrino/update'
 
+/**
+ * Lo que este bot lee de una actualización de Telegram (solo esos campos).
+ * @typedef {object} TgUser
+ * @property {number} id
+ * @property {string} [username]
+ * @property {string} [first_name]
+ *
+ * @typedef {object} TgMessage
+ * @property {TgUser} [from]
+ * @property {{ id: number }} chat
+ * @property {string} [text]
+ * @property {string} [caption]
+ * @property {{ file_id: string }[]} [photo]
+ * @property {{ file_id: string, mime_type?: string, file_name?: string }} [document]
+ *
+ * @typedef {object} TgUpdate
+ * @property {TgMessage} [message]
+ * @property {TgMessage} [edited_message]
+ *
+ * @typedef {{ text: string, chatId: number, who: string }} Job
+ */
+
 /* --------- Config (.env: arg CLI o --env, si no BOT_ENV, si no ./.env del cwd) --------- */
 const _argv = process.argv.slice(2)
 const _envArg = (_argv.includes('--env') ? _argv[_argv.indexOf('--env') + 1] : null) || _argv.find((a) => !a.startsWith('-'))
 const ENV_FILE = _envArg || process.env.BOT_ENV || join(process.cwd(), '.env')
+/** @returns {Record<string, string>} */
 function loadEnvFile () {
+  /** @type {Record<string, string>} */
   const e = {}
   try {
     for (const line of readFileSync(ENV_FILE, 'utf8').split('\n')) {
@@ -40,6 +64,7 @@ function loadEnvFile () {
   } catch { /* no hay archivo */ }
   return e
 }
+/** @param {string} key @param {string} value */
 function setEnv (key, value) {
   let txt = ''
   try { txt = readFileSync(ENV_FILE, 'utf8') } catch {}
@@ -49,6 +74,7 @@ function setEnv (key, value) {
   writeFileSync(ENV_FILE, txt)
 }
 const fileEnv = loadEnvFile()
+/** @param {string} k @returns {string | undefined} */
 const cfg = (k) => (process.env[k] !== undefined && process.env[k] !== '' ? process.env[k] : fileEnv[k])
 
 const TOKEN = cfg('TELEGRAM_BOT_TOKEN')
@@ -81,18 +107,29 @@ const COMPACT_AFTER_IDLE_HOURS = Number(cfg('COMPACT_AFTER_IDLE_HOURS') || 6)
 let lastRequestTs = Number(cfg('LAST_REQUEST_TS') || 0)
 const TUNNEL_SERVER = cfg('TUNNEL_SERVER') || undefined   // undefined → default de la lib
 let busy = false
+/** @type {Job[]} */
 const queue = []
 // PATH robusto para cuando arranca por systemd/PM2 (PATH mínimo): node + ~/.local/bin (claude).
 const EXTRA_PATH = [dirname(process.execPath), `${process.env.HOME || ''}/.local/bin`].filter(Boolean).join(':')
 
 /* --------- API de Telegram --------- */
+/**
+ * @param {string} method
+ * @param {object} body
+ * @returns {Promise<any>}  la respuesta JSON de la API de Telegram, cuya forma depende del método
+ */
 const api = (method, body) =>
   fetch(`https://api.telegram.org/bot${TOKEN}/${method}`, {
     method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body),
   }).then((r) => r.json())
+/** @param {number} chatId @param {string} text */
 const reply = (chatId, text) => api('sendMessage', { chat_id: chatId, text })
 
 /* --------- Media: descarga de fotos/imágenes de Telegram --------- */
+/**
+ * @param {TgMessage} msg
+ * @returns {{ fileId: string, name: string } | null}
+ */
 function pickMedia (msg) {
   if (Array.isArray(msg.photo) && msg.photo.length) {
     const big = msg.photo[msg.photo.length - 1]   // la de mayor resolución
@@ -104,6 +141,11 @@ function pickMedia (msg) {
   }
   return null
 }
+/**
+ * @param {string} fileId
+ * @param {string} name
+ * @returns {Promise<string>}  ruta local donde quedó el archivo
+ */
 async function downloadTgFile (fileId, name) {
   const g = await api('getFile', { file_id: fileId })
   if (!g.ok || !g.result || !g.result.file_path) throw new Error('getFile failed')
@@ -117,6 +159,7 @@ async function downloadTgFile (fileId, name) {
 }
 
 /* --------- Lógica del bot --------- */
+/** @param {TgUpdate} update */
 async function handleUpdate (update) {
   const msg = update.message || update.edited_message
   if (!msg || !msg.from) return
@@ -158,8 +201,9 @@ async function handleUpdate (update) {
       const prompt = `[El usuario adjuntó una imagen. Está guardada localmente en: ${path} — ábrela con tu herramienta de lectura de imágenes.]${cap ? '\nComentario del usuario: ' + cap : ''}`
       enqueue(prompt, chatId, who)
     } catch (e) {
-      console.error('image download failed:', e.message)
-      await reply(chatId, '⚠️ No pude descargar la imagen: ' + (e.message || e))
+      const err = /** @type {Error} */ (e)
+      console.error('image download failed:', err.message)
+      await reply(chatId, '⚠️ No pude descargar la imagen: ' + (err.message || err))
     }
     return
   }
@@ -170,6 +214,7 @@ async function handleUpdate (update) {
 }
 
 /* --------- Cola: encola y procesa en orden (no descarta) --------- */
+/** @param {string} text @param {number} chatId @param {string} who */
 function enqueue (text, chatId, who) {
   queue.push({ text, chatId, who })
   if (busy) reply(chatId, `📥 En cola (${queue.length} esperando). Lo respondo apenas termine el anterior.`).catch(() => {})
@@ -178,12 +223,13 @@ function enqueue (text, chatId, who) {
 async function drain () {
   if (busy || !queue.length) return
   busy = true
-  const job = queue.shift()
+  const job = /** @type {Job} */ (queue.shift())
   try { await runClaude(job.text, job.chatId, job.who) }
   finally { busy = false; if (queue.length) drain() }
 }
 
 /* --------- Claude (con memoria de sesión) --------- */
+/** @param {string} text @param {number} chatId @param {string} who */
 async function runClaude (text, chatId, who) {
   console.log(`💬 ${who}: ${text.slice(0, 100)}`)
   api('sendChatAction', { chat_id: chatId, action: 'typing' }).catch(() => {})
@@ -197,7 +243,7 @@ async function runClaude (text, chatId, who) {
       r = await claudeRun(text, sessionId)
     } catch (e) {
       // Sesión inválida/inexistente → empezar una nueva en vez de fallar.
-      if (sessionId && /no conversation found|session/i.test(e.message || '')) {
+      if (sessionId && /no conversation found|session/i.test(/** @type {Error} */ (e).message || '')) {
         console.log('previous session invalid → starting a new one')
         sessionId = null; setEnv('CLAUDE_SESSION_ID', '')
         r = await claudeRun(text, null)
@@ -211,11 +257,17 @@ async function runClaude (text, chatId, who) {
       await compact(chatId)
     }
   } catch (e) {
-    console.error('claude error:', e.message)
-    await reply(chatId, '⚠️ Error con Claude: ' + (e.message || e))
+    const err = /** @type {Error} */ (e)
+    console.error('claude error:', err.message)
+    await reply(chatId, '⚠️ Error con Claude: ' + (err.message || err))
   } finally { clearInterval(typing) }
 }
 
+/**
+ * @param {string} text
+ * @param {string | null} useSession
+ * @returns {Promise<{ result: unknown, sid: string | null, tokens: number }>}
+ */
 async function claudeRun (text, useSession) {
   const args = ['-p', text, '--output-format', 'json', ...CLAUDE_FLAGS]
   if (useSession) args.push('--resume', useSession)
@@ -227,6 +279,10 @@ async function claudeRun (text, useSession) {
 
 // Tamaño aproximado del prompt/contexto de la última vuelta = tokens enviados
 // (frescos + los cacheados que se re-envían). Es el mejor proxy de "cuánto creció".
+/**
+ * @param {{ usage?: { input_tokens?: number, cache_read_input_tokens?: number, cache_creation_input_tokens?: number } } | null} j
+ * @returns {number}
+ */
 function contextTokensOf (j) {
   const u = j && j.usage
   if (!u) return 0
@@ -238,6 +294,7 @@ function contextTokensOf (j) {
 function markActivity () { lastRequestTs = Date.now(); setEnv('LAST_REQUEST_TS', String(lastRequestTs)) }
 
 // Compacta si pasaron más de COMPACT_AFTER_IDLE_HOURS desde el mensaje anterior.
+/** @param {number} chatId */
 async function maybeCompactByIdle (chatId) {
   if (!sessionId || COMPACT_AFTER_IDLE_HOURS <= 0 || !lastRequestTs) return
   const idleMs = Date.now() - lastRequestTs
@@ -249,6 +306,7 @@ async function maybeCompactByIdle (chatId) {
 
 // Lanza `/compact` en la sesión actual para resumir el historial y liberar
 // contexto. Conserva la memoria (el resumen) y el hilo sigue en la misma sesión.
+/** @param {number} chatId @param {string} [intro] */
 async function compact (chatId, intro) {
   if (!sessionId) return
   await reply(chatId, intro || '🗜️ El contexto creció bastante; lo compacto para seguir ágil…').catch(() => {})
@@ -256,14 +314,21 @@ async function compact (chatId, intro) {
     const args = ['-p', '/compact', '--output-format', 'json', '--resume', sessionId, ...CLAUDE_FLAGS]
     const out = await runCmd(CLAUDE_BIN, args, CLAUDE_CWD, CLAUDE_TIMEOUT)
     let ok = true
-    try { const j = JSON.parse(out); if (j.session_id) { sessionId = j.session_id; setEnv('CLAUDE_SESSION_ID', sessionId) } ok = !j.is_error } catch {}
+    try { const j = JSON.parse(out); if (j.session_id) { const sid = String(j.session_id); sessionId = sid; setEnv('CLAUDE_SESSION_ID', sid) } ok = !j.is_error } catch {}
     await reply(chatId, ok ? '✅ Contexto compactado; sigo con el resumen.' : '⚠️ No se pudo compactar; sigo igual.').catch(() => {})
   } catch (e) {
-    console.error('compact error:', e.message)
+    console.error('compact error:', /** @type {Error} */ (e).message)
     await reply(chatId, '⚠️ No se pudo compactar; sigo igual.').catch(() => {})
   }
 }
 
+/**
+ * @param {string} cmd
+ * @param {string[]} args
+ * @param {string} cwd
+ * @param {number} [timeoutMs]  0 = sin límite
+ * @returns {Promise<string>}  stdout
+ */
 function runCmd (cmd, args, cwd, timeoutMs = 0) {
   return new Promise((resolve, reject) => {
     // stdin cerrado para que claude -p no espere por stdin.
@@ -278,6 +343,7 @@ function runCmd (cmd, args, cwd, timeoutMs = 0) {
   })
 }
 
+/** @param {number} chatId @param {string} text */
 async function sendLong (chatId, text) {
   const MAX = 4000
   if (!text) return
@@ -294,6 +360,7 @@ try {
     target: async (req) => {
       if (req.headers['x-telegram-bot-api-secret-token'] !== SECRET) return { status: 401, body: 'unauthorized' }
       if (req.method !== 'POST') return { status: 200, body: 'ok' }
+      /** @type {TgUpdate} */
       let update = {}
       try { update = JSON.parse(req.body ? req.body.toString() : '{}') } catch {}
       handleUpdate(update).catch((e) => console.error('handler error:', e))
@@ -314,7 +381,7 @@ try {
     onRejected: (_reason, message) => { console.error('tunnel rejected:', message); process.exit(1) },
   })
 } catch (e) {
-  if (e.code !== 'TUNNEL_NOT_ENROLLED') throw e
+  if (/** @type {{ code?: string }} */ (e).code !== 'TUNNEL_NOT_ENROLLED') throw e
   console.error(`The tunnel "${TUNNEL_NAME}" is not enrolled in your vault yet. Enroll it once with:
   npx @dotrino/tunnel enroll --name ${TUNNEL_NAME}`)
   process.exit(1)

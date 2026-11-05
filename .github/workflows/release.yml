@@ -37,6 +37,8 @@ jobs:
 
       - run: npm i -g npm@latest
       - run: npm ci
+      # Los tipos, en modo estricto: lo que no pasa tsc no se publica.
+      - run: npm run type-check
       # El registro de compatibilidad (dotrino-roadmap, CONVENCIONES §14): nada instalado en
       # una versión marcada rota ni por debajo de lo que exige la ficha. Con @latest, que trae
       # la lista de rotas más nueva. Va antes de publicar: aquí sí frena.
